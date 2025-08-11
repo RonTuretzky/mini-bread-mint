@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createPublicClient, createWalletClient, custom, formatEther, parseEther, type Hex } from 'viem';
+import { createPublicClient, createWalletClient, custom, http, formatEther, parseEther, type Hex } from 'viem';
 import sdk from '@farcaster/frame-sdk';
 import { gnosis } from './lib/chains';
 import { breadAbi } from './lib/breadAbi';
@@ -37,10 +37,12 @@ export default function Page() {
           console.log('Using Farcaster wallet provider');
           setProvider(farcasterProvider);
           
+          // Use HTTP RPC for reads and simulations
           setPublicClient(createPublicClient({
             chain: gnosis,
-            transport: custom(farcasterProvider),
+            transport: http('https://rpc.gnosischain.com'),
           }));
+          // Use wallet provider for signing
           setWalletClient(createWalletClient({
             chain: gnosis,
             transport: custom(farcasterProvider),
@@ -55,10 +57,12 @@ export default function Page() {
           console.log('Using window.ethereum provider');
           setProvider(window.ethereum);
           
+          // Use HTTP RPC for reads and simulations
           setPublicClient(createPublicClient({
             chain: gnosis,
-            transport: custom(window.ethereum),
+            transport: http('https://rpc.gnosischain.com'),
           }));
+          // Use wallet provider for signing
           setWalletClient(createWalletClient({
             chain: gnosis,
             transport: custom(window.ethereum),
