@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createPublicClient, createWalletClient, custom, formatEther, parseEther, type Hex } from 'viem';
+import sdk from '@farcaster/frame-sdk';
 import { gnosis } from './lib/chains';
 import { breadAbi } from './lib/breadAbi';
 import { BREAD_CONTRACT_ADDRESS } from './config';
@@ -18,6 +19,21 @@ export default function Page() {
 
   const [publicClient, setPublicClient] = useState<any>(null);
   const [walletClient, setWalletClient] = useState<any>(null);
+
+  // Initialize Farcaster SDK
+  useEffect(() => {
+    const initializeApp = async () => {
+      try {
+        // Signal that the app is ready
+        await sdk.actions.ready();
+        console.log('Farcaster SDK ready');
+      } catch (error) {
+        console.log('Not running in Farcaster context:', error);
+      }
+    };
+    
+    initializeApp();
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.ethereum) {
