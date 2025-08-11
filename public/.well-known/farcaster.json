@@ -1,4 +1,9 @@
 {
+  "accountAssociation": {
+    "header": "eyJmaWQiOjY5NjAxMiwidHlwZSI6ImF1dGgiLCJrZXkiOiIweDZFMjczN2Q3QjcyNDdBMzVFZDY4NTFhNjg1YTE1NEZCQTE5RTQxRGEifQ",
+    "payload": "eyJkb21haW4iOiJtaW5pLWJyZWFkLW1pbnQudmVyY2VsLmFwcCJ9",
+    "signature": "mUGYVEn1sPFMHJEjeBnTlXGPF9BVIV0BCbFPbrF74kQxLSDoYmlgeAGTEZhBBjm8jAj+32Q3ZsGft6i2J7v4ABw="
+  },
   "miniapp": {
     "version": "1",
     "name": "$BREAD",
