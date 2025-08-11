@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Orange rounded rectangle background -->
+  <rect width="1024" height="1024" rx="120" fill="#E16B38"/>
+  
+  <!-- White outer circle -->
+  <circle cx="512" cy="512" r="280" fill="white"/>
+  
+  <!-- Orange inner flower/cross pattern -->
+  <g transform="translate(512, 512)">
+    <!-- Center circle -->
+    <circle cx="0" cy="0" r="60" fill="#E16B38"/>
+    
+    <!-- Four petals with proper proportions -->
+    <ellipse cx="0" cy="-110" rx="70" ry="80" fill="#E16B38"/>
+    <ellipse cx="110" cy="0" rx="80" ry="70" fill="#E16B38"/>
+    <ellipse cx="0" cy="110" rx="70" ry="80" fill="#E16B38"/>
+    <ellipse cx="-110" cy="0" rx="80" ry="70" fill="#E16B38"/>
+  </g>
+</svg>

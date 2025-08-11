@@ -1,16 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
-  <!-- Background -->
-  <rect width="200" height="200" rx="20" fill="#E16B38"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 200" width="280" height="200">
+  <!-- Orange rounded rectangle background -->
+  <rect width="280" height="200" rx="30" fill="#E16B38"/>
   
-  <!-- Center cross/flower pattern -->
-  <g transform="translate(100, 100)">
+  <!-- White outer circle -->
+  <circle cx="140" cy="100" r="55" fill="white"/>
+  
+  <!-- Orange inner flower/cross pattern -->
+  <g transform="translate(140, 100)">
     <!-- Center circle -->
-    <circle cx="0" cy="0" r="12" fill="white"/>
+    <circle cx="0" cy="0" r="12" fill="#E16B38"/>
     
-    <!-- Four petals/circles -->
-    <circle cx="0" cy="-30" r="20" fill="white"/>
-    <circle cx="30" cy="0" r="20" fill="white"/>
-    <circle cx="0" cy="30" r="20" fill="white"/>
-    <circle cx="-30" cy="0" r="20" fill="white"/>
+    <!-- Four petals with better proportions -->
+    <ellipse cx="0" cy="-22" rx="14" ry="16" fill="#E16B38"/>
+    <ellipse cx="22" cy="0" rx="16" ry="14" fill="#E16B38"/>
+    <ellipse cx="0" cy="22" rx="14" ry="16" fill="#E16B38"/>
+    <ellipse cx="-22" cy="0" rx="16" ry="14" fill="#E16B38"/>
   </g>
 </svg>
