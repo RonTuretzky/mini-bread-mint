@@ -272,15 +272,79 @@ export default function Page() {
         value: parseEther(mintAmount),
       });
 
-      const hash = await currentWalletClient.writeContract(request);
-      setMessage(`Transaction sent: ${hash}`);
+      console.log('Sending mint transaction with request:', request);
+      console.log('Using walletClient:', currentWalletClient);
+      console.log('Account:', account);
+      
+      let hash;
+      try {
+        setMessage('Waiting for wallet confirmation...');
+        
+        // Simplify the writeContract call for Farcaster
+        console.log('About to call writeContract with:', {
+          request,
+          account,
+          isInFarcaster,
+        });
+        
+        if (isInFarcaster) {
+          // For Farcaster, use a simpler approach
+          hash = await currentWalletClient.writeContract(request);
+        } else {
+          // For MetaMask/other wallets, include account and chain
+          hash = await currentWalletClient.writeContract({
+            ...request,
+            account: account,
+            chain: gnosis,
+          });
+        }
+        
+        if (!hash) {
+          throw new Error('No transaction hash received from wallet');
+        }
+        
+        console.log('Transaction hash received:', hash);
+        setMessage(`Transaction sent: ${hash}`);
+      } catch (writeError: any) {
+        console.error('Error during writeContract:', writeError);
+        console.error('Full error details:', {
+          message: writeError.message,
+          code: writeError.code,
+          data: writeError.data,
+          stack: writeError.stack,
+        });
+        
+        if (writeError.message?.includes('User rejected') || writeError.message?.includes('User denied')) {
+          setMessage('Transaction cancelled by user');
+          setIsLoading(false);
+          return;
+        }
+        
+        throw writeError;
+      }
       
       await publicClient.waitForTransactionReceipt({ hash });
       setMessage('Mint successful! Bake that BREAD!');
       await updateBalances(account);
     } catch (error: any) {
-      console.error('Mint error:', error);
-      setMessage(`Error: ${error.message}`);
+      console.error('Mint error details:', {
+        error,
+        errorMessage: error.message,
+        errorCode: error.code,
+        errorData: error.data,
+        errorStack: error.stack,
+        mintAmount,
+        receiver: receiver || account,
+      });
+      
+      // More specific error messages
+      if (error.message?.includes('User rejected') || error.message?.includes('User denied')) {
+        setMessage('Transaction cancelled by user');
+      } else if (error.message?.includes('insufficient funds')) {
+        setMessage('Insufficient xDAI balance for this transaction');
+      } else {
+        setMessage(`Error: ${error.message || 'Failed to mint BREAD'}`);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -391,8 +455,56 @@ export default function Page() {
         args: [burnAmountWei, (receiver || account) as Hex],
       });
 
-      const hash = await currentWalletClient.writeContract(request);
-      setMessage(`Transaction sent: ${hash}`);
+      console.log('Sending burn transaction with request:', request);
+      console.log('Using walletClient:', currentWalletClient);
+      console.log('Account:', account);
+      
+      let hash;
+      try {
+        setMessage('Waiting for wallet confirmation...');
+        
+        // Simplify the writeContract call for Farcaster
+        console.log('About to call writeContract with:', {
+          request,
+          account,
+          isInFarcaster,
+        });
+        
+        if (isInFarcaster) {
+          // For Farcaster, use a simpler approach
+          hash = await currentWalletClient.writeContract(request);
+        } else {
+          // For MetaMask/other wallets, include account and chain
+          hash = await currentWalletClient.writeContract({
+            ...request,
+            account: account,
+            chain: gnosis,
+          });
+        }
+        
+        if (!hash) {
+          throw new Error('No transaction hash received from wallet');
+        }
+        
+        console.log('Transaction hash received:', hash);
+        setMessage(`Transaction sent: ${hash}`);
+      } catch (writeError: any) {
+        console.error('Error during writeContract:', writeError);
+        console.error('Full error details:', {
+          message: writeError.message,
+          code: writeError.code,
+          data: writeError.data,
+          stack: writeError.stack,
+        });
+        
+        if (writeError.message?.includes('User rejected') || writeError.message?.includes('User denied')) {
+          setMessage('Transaction cancelled by user');
+          setIsLoading(false);
+          return;
+        }
+        
+        throw writeError;
+      }
       
       await publicClient.waitForTransactionReceipt({ hash });
       setMessage('Burn successful!');
