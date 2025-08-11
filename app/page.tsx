@@ -5,7 +5,7 @@ import { createPublicClient, createWalletClient, custom, http, formatEther, pars
 import sdk from '@farcaster/frame-sdk';
 import { gnosis } from './lib/chains';
 import { breadAbi } from './lib/breadAbi';
-import { BREAD_CONTRACT_ADDRESS } from './config';
+import { BREAD_CONTRACT_ADDRESS, GNOSIS_CHAIN_ID } from './config';
 
 export default function Page() {
   const [account, setAccount] = useState<Hex | null>(null);
@@ -94,6 +94,16 @@ export default function Page() {
       if (isInFarcaster) {
         // For Farcaster, request wallet connection
         try {
+          // Switch to Gnosis chain if needed
+          if (walletClient.chain?.id !== GNOSIS_CHAIN_ID) {
+            try {
+              await walletClient.switchChain({ id: GNOSIS_CHAIN_ID });
+            } catch (switchError: any) {
+              console.error('Error switching chain in Farcaster:', switchError);
+              // Chain might not be added, continue anyway
+            }
+          }
+          
           const accounts = await walletClient.requestAddresses();
           if (accounts.length > 0) {
             setAccount(accounts[0]);
@@ -187,6 +197,11 @@ export default function Page() {
     setMessage('');
 
     try {
+      // Ensure we're on the correct chain
+      if (walletClient.chain?.id !== GNOSIS_CHAIN_ID) {
+        setMessage('Switching to Gnosis Chain...');
+        await walletClient.switchChain({ id: GNOSIS_CHAIN_ID });
+      }
       const { request } = await publicClient.simulateContract({
         account,
         address: BREAD_CONTRACT_ADDRESS as Hex,
@@ -225,6 +240,11 @@ export default function Page() {
     setMessage('');
 
     try {
+      // Ensure we're on the correct chain
+      if (walletClient.chain?.id !== GNOSIS_CHAIN_ID) {
+        setMessage('Switching to Gnosis Chain...');
+        await walletClient.switchChain({ id: GNOSIS_CHAIN_ID });
+      }
       const { request } = await publicClient.simulateContract({
         account,
         address: BREAD_CONTRACT_ADDRESS as Hex,
