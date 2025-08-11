@@ -19,33 +19,55 @@ export default function Page() {
 
   const [publicClient, setPublicClient] = useState<any>(null);
   const [walletClient, setWalletClient] = useState<any>(null);
+  const [isInFarcaster, setIsInFarcaster] = useState<boolean>(false);
+  const [provider, setProvider] = useState<any>(null);
 
-  // Initialize Farcaster SDK
+  // Initialize Farcaster SDK and setup wallet
   useEffect(() => {
     const initializeApp = async () => {
       try {
         // Signal that the app is ready
         await sdk.actions.ready();
         console.log('Farcaster SDK ready');
+        setIsInFarcaster(true);
+        
+        // Get Farcaster wallet provider
+        const farcasterProvider = await sdk.wallet.ethProvider;
+        if (farcasterProvider) {
+          console.log('Using Farcaster wallet provider');
+          setProvider(farcasterProvider);
+          
+          setPublicClient(createPublicClient({
+            chain: gnosis,
+            transport: custom(farcasterProvider),
+          }));
+          setWalletClient(createWalletClient({
+            chain: gnosis,
+            transport: custom(farcasterProvider),
+          }));
+        }
       } catch (error) {
         console.log('Not running in Farcaster context:', error);
+        setIsInFarcaster(false);
+        
+        // Fall back to window.ethereum for standalone web
+        if (typeof window !== 'undefined' && window.ethereum) {
+          console.log('Using window.ethereum provider');
+          setProvider(window.ethereum);
+          
+          setPublicClient(createPublicClient({
+            chain: gnosis,
+            transport: custom(window.ethereum),
+          }));
+          setWalletClient(createWalletClient({
+            chain: gnosis,
+            transport: custom(window.ethereum),
+          }));
+        }
       }
     };
     
     initializeApp();
-  }, []);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.ethereum) {
-      setPublicClient(createPublicClient({
-        chain: gnosis,
-        transport: custom(window.ethereum),
-      }));
-      setWalletClient(createWalletClient({
-        chain: gnosis,
-        transport: custom(window.ethereum),
-      }));
-    }
   }, []);
 
   useEffect(() => {
@@ -56,8 +78,8 @@ export default function Page() {
 
   const connectWallet = async () => {
     try {
-      if (!window.ethereum) {
-        setMessage('Please install MetaMask');
+      if (!provider) {
+        setMessage(isInFarcaster ? 'Wallet not available' : 'Please install MetaMask');
         return;
       }
       
@@ -65,38 +87,54 @@ export default function Page() {
         return;
       }
 
-      // Switch to Gnosis chain first
-      try {
-        await window.ethereum.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: '0x64' }],
-        });
-      } catch (switchError: any) {
-        if (switchError.code === 4902) {
-          await window.ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [
-              {
-                chainId: '0x64',
-                chainName: 'Gnosis',
-                nativeCurrency: {
-                  name: 'xDai',
-                  symbol: 'xDAI',
-                  decimals: 18,
-                },
-                rpcUrls: ['https://rpc.gnosischain.com'],
-                blockExplorerUrls: ['https://gnosisscan.io'],
-              },
-            ],
-          });
+      if (isInFarcaster) {
+        // For Farcaster, request wallet connection
+        try {
+          const accounts = await walletClient.requestAddresses();
+          if (accounts.length > 0) {
+            setAccount(accounts[0]);
+            setReceiver(accounts[0]);
+            await updateBalances(accounts[0]);
+            setMessage('Wallet connected via Farcaster');
+          }
+        } catch (error: any) {
+          console.error('Error connecting Farcaster wallet:', error);
+          setMessage('Error connecting wallet - please ensure you have a wallet connected to Farcaster');
         }
-      }
+      } else {
+        // For standalone web, use MetaMask flow
+        try {
+          await provider.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x64' }],
+          });
+        } catch (switchError: any) {
+          if (switchError.code === 4902) {
+            await provider.request({
+              method: 'wallet_addEthereumChain',
+              params: [
+                {
+                  chainId: '0x64',
+                  chainName: 'Gnosis',
+                  nativeCurrency: {
+                    name: 'xDai',
+                    symbol: 'xDAI',
+                    decimals: 18,
+                  },
+                  rpcUrls: ['https://rpc.gnosischain.com'],
+                  blockExplorerUrls: ['https://gnosisscan.io'],
+                },
+              ],
+            });
+          }
+        }
 
-      const accounts = await walletClient.requestAddresses();
-      if (accounts.length > 0) {
-        setAccount(accounts[0]);
-        setReceiver(accounts[0]);
-        await updateBalances(accounts[0]);
+        const accounts = await walletClient.requestAddresses();
+        if (accounts.length > 0) {
+          setAccount(accounts[0]);
+          setReceiver(accounts[0]);
+          await updateBalances(accounts[0]);
+        }
       }
     } catch (error: any) {
       console.error('Error connecting wallet:', error);
@@ -256,7 +294,7 @@ export default function Page() {
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#C55A2B'}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#E16B38'}
                 >
-                  Connect Wallet
+                  {isInFarcaster ? 'Connect Farcaster Wallet' : 'Connect Wallet'}
                 </button>
               )}
             </div>
