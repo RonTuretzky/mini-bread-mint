@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   title: 'BREAD COOPERATIVE',
   description: 'The future after capital. Bake Bread - Mint and Burn BREAD on Gnosis Chain',
   icons: {
-    icon: '/bread-coop-logo.svg',
+    icon: '/bread-coop-logo.png',
   },
 };
 

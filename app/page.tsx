@@ -194,7 +194,7 @@ export default function Page() {
       <div className="container mx-auto px-4 py-8">
         <header className="text-center mb-12">
           <div className="flex justify-center items-center mb-6">
-            <img src="/bread-coop-logo.svg" alt="Bread Cooperative" className="w-20 h-20 mr-4" />
+            <img src="/bread-coop-logo.png" alt="Bread Cooperative" className="h-16 w-auto mr-4" />
             <h1 className="text-4xl md:text-5xl font-bold uppercase tracking-wide" style={{ color: '#E16B38', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
               Bread Cooperative
             </h1>
