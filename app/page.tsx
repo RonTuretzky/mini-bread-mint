@@ -188,7 +188,7 @@ export default function Page() {
       return;
     }
     
-    if (!walletClient || !publicClient) {
+    if (!walletClient || !publicClient || !provider) {
       setMessage('Wallet not connected');
       return;
     }
@@ -197,11 +197,66 @@ export default function Page() {
     setMessage('');
 
     try {
-      // Ensure we're on the correct chain
-      if (walletClient.chain?.id !== GNOSIS_CHAIN_ID) {
-        setMessage('Switching to Gnosis Chain...');
-        await walletClient.switchChain({ id: GNOSIS_CHAIN_ID });
+      // Ensure we're on the correct chain and get the right walletClient
+      let currentWalletClient = walletClient;
+      
+      try {
+        const chainId = await provider.request({ method: 'eth_chainId' });
+        const currentChainId = parseInt(chainId, 16);
+        
+        if (currentChainId !== GNOSIS_CHAIN_ID) {
+          setMessage('Switching to Gnosis Chain...');
+          await provider.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x64' }],
+          });
+          
+          // Recreate walletClient with the new chain
+          currentWalletClient = createWalletClient({
+            chain: gnosis,
+            transport: custom(provider),
+          });
+          setWalletClient(currentWalletClient);
+        }
+      } catch (switchError: any) {
+        console.error('Error switching chain:', switchError);
+        if (switchError.code === 4902) {
+          // Chain not added, try to add it
+          try {
+            await provider.request({
+              method: 'wallet_addEthereumChain',
+              params: [
+                {
+                  chainId: '0x64',
+                  chainName: 'Gnosis',
+                  nativeCurrency: {
+                    name: 'xDai',
+                    symbol: 'xDAI',
+                    decimals: 18,
+                  },
+                  rpcUrls: ['https://rpc.gnosischain.com'],
+                  blockExplorerUrls: ['https://gnosisscan.io'],
+                },
+              ],
+            });
+            // Recreate walletClient after adding chain
+            currentWalletClient = createWalletClient({
+              chain: gnosis,
+              transport: custom(provider),
+            });
+            setWalletClient(currentWalletClient);
+          } catch (addError) {
+            setMessage('Failed to add Gnosis Chain. Please add it manually.');
+            setIsLoading(false);
+            return;
+          }
+        } else {
+          setMessage('Failed to switch to Gnosis Chain');
+          setIsLoading(false);
+          return;
+        }
       }
+      
       const { request } = await publicClient.simulateContract({
         account,
         address: BREAD_CONTRACT_ADDRESS as Hex,
@@ -211,7 +266,7 @@ export default function Page() {
         value: parseEther(mintAmount),
       });
 
-      const hash = await walletClient.writeContract(request);
+      const hash = await currentWalletClient.writeContract(request);
       setMessage(`Transaction sent: ${hash}`);
       
       await publicClient.waitForTransactionReceipt({ hash });
@@ -231,7 +286,7 @@ export default function Page() {
       return;
     }
     
-    if (!walletClient || !publicClient) {
+    if (!walletClient || !publicClient || !provider) {
       setMessage('Wallet not connected');
       return;
     }
@@ -240,11 +295,66 @@ export default function Page() {
     setMessage('');
 
     try {
-      // Ensure we're on the correct chain
-      if (walletClient.chain?.id !== GNOSIS_CHAIN_ID) {
-        setMessage('Switching to Gnosis Chain...');
-        await walletClient.switchChain({ id: GNOSIS_CHAIN_ID });
+      // Ensure we're on the correct chain and get the right walletClient
+      let currentWalletClient = walletClient;
+      
+      try {
+        const chainId = await provider.request({ method: 'eth_chainId' });
+        const currentChainId = parseInt(chainId, 16);
+        
+        if (currentChainId !== GNOSIS_CHAIN_ID) {
+          setMessage('Switching to Gnosis Chain...');
+          await provider.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x64' }],
+          });
+          
+          // Recreate walletClient with the new chain
+          currentWalletClient = createWalletClient({
+            chain: gnosis,
+            transport: custom(provider),
+          });
+          setWalletClient(currentWalletClient);
+        }
+      } catch (switchError: any) {
+        console.error('Error switching chain:', switchError);
+        if (switchError.code === 4902) {
+          // Chain not added, try to add it
+          try {
+            await provider.request({
+              method: 'wallet_addEthereumChain',
+              params: [
+                {
+                  chainId: '0x64',
+                  chainName: 'Gnosis',
+                  nativeCurrency: {
+                    name: 'xDai',
+                    symbol: 'xDAI',
+                    decimals: 18,
+                  },
+                  rpcUrls: ['https://rpc.gnosischain.com'],
+                  blockExplorerUrls: ['https://gnosisscan.io'],
+                },
+              ],
+            });
+            // Recreate walletClient after adding chain
+            currentWalletClient = createWalletClient({
+              chain: gnosis,
+              transport: custom(provider),
+            });
+            setWalletClient(currentWalletClient);
+          } catch (addError) {
+            setMessage('Failed to add Gnosis Chain. Please add it manually.');
+            setIsLoading(false);
+            return;
+          }
+        } else {
+          setMessage('Failed to switch to Gnosis Chain');
+          setIsLoading(false);
+          return;
+        }
       }
+      
       const { request } = await publicClient.simulateContract({
         account,
         address: BREAD_CONTRACT_ADDRESS as Hex,
@@ -253,7 +363,7 @@ export default function Page() {
         args: [parseEther(burnAmount), (receiver || account) as Hex],
       });
 
-      const hash = await walletClient.writeContract(request);
+      const hash = await currentWalletClient.writeContract(request);
       setMessage(`Transaction sent: ${hash}`);
       
       await publicClient.waitForTransactionReceipt({ hash });
