@@ -1,7 +1,7 @@
 {
   "miniapp": {
     "version": "1",
-    "name": "BREAD COOPERATIVE",
+    "name": "$BREAD",
     "homeUrl": "https://bread-coop.vercel.app",
     "iconUrl": "https://bread-coop.vercel.app/bread-coop-icon-1024.png",
     "primaryCategory": "utility"
