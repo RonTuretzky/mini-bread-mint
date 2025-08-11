@@ -59,6 +59,24 @@ ALLOWED_ORIGIN=localhost:3000
 
 For production, update these values accordingly.
 
+## Farcaster Mini App
+
+This app is configured as a Farcaster Mini App. The configuration is in `farcaster.json`.
+
+### Deployment Steps for Farcaster
+
+1. **Generate Required Images**: Convert SVG files to PNG (see `public/IMAGE_REQUIREMENTS.md`)
+2. **Update URLs**: Update all URLs in `farcaster.json` to your production domain
+3. **Deploy to Vercel/Production**: Deploy the Next.js app
+4. **Submit to Farcaster**: Submit your mini app through the Farcaster developer portal
+
+### Required Capabilities
+
+- `actions.signIn` - User authentication
+- `wallet.getEthereumProvider` - Access to wallet provider
+- `wallet.switchChain` - Switch to Gnosis Chain
+- `wallet.sendTransaction` - Send mint/burn transactions
+
 ## Tech Stack
 
 - Next.js 14

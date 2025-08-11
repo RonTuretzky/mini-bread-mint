@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#F5F0E8"/>
+  
+  <!-- Logo on left -->
+  <g transform="translate(150, 265)">
+    <rect width="100" height="100" rx="10" fill="#E16B38"/>
+    <g transform="translate(50, 50)">
+      <circle cx="0" cy="0" r="6" fill="white"/>
+      <circle cx="0" cy="-15" r="10" fill="white"/>
+      <circle cx="15" cy="0" r="10" fill="white"/>
+      <circle cx="0" cy="15" r="10" fill="white"/>
+      <circle cx="-15" cy="0" r="10" fill="white"/>
+    </g>
+  </g>
+  
+  <!-- Text content -->
+  <text x="300" y="280" font-family="system-ui, -apple-system, sans-serif" font-size="48" font-weight="bold" fill="#E16B38">
+    BREAD COOPERATIVE
+  </text>
+  
+  <text x="300" y="330" font-family="system-ui, -apple-system, sans-serif" font-size="28" fill="#333" font-style="italic">
+    The future after capital
+  </text>
+  
+  <text x="300" y="380" font-family="system-ui, -apple-system, sans-serif" font-size="24" fill="#666">
+    Bake Bread • Mint and Burn on Gnosis Chain
+  </text>
+  
+  <!-- Bottom tagline -->
+  <text x="600" y="550" font-family="system-ui, -apple-system, sans-serif" font-size="20" text-anchor="middle" fill="#E16B38" font-weight="bold" letter-spacing="2">
+    ALL POWER TO THE PEOPLE
+  </text>
+</svg>
