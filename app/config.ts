@@ -1,9 +1,9 @@
-export const NEXT_PUBLIC_URL = 'https://mint.farcaster.xyz';
-export const ALLOWED_ORIGIN = 'mint.farcaster.xyz';
-export const ZORA_COLLECTION_ADDRESS = '0xf5a3b6dee033ae5025e4332695931cadeb7f4d2b';
-export const ZORA_TOKEN_ID = '1';
+export const NEXT_PUBLIC_URL = process.env.NEXT_PUBLIC_URL || 'http://localhost:3000';
+export const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'localhost:3000';
+export const BREAD_CONTRACT_ADDRESS = '0xa555d5344f6fb6c65da19e403cb4c1ec4a1a5ee3';
+export const GNOSIS_CHAIN_ID = 100;
 export const CARD_DIMENSIONS = {
   width: 800,
   height: 800,
 };
-export const TOKEN_IMAGE = `${NEXT_PUBLIC_URL}/horse.png`;
+export const TOKEN_IMAGE = `${NEXT_PUBLIC_URL}/bread.png`;
