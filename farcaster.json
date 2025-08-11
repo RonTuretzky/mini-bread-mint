@@ -3,41 +3,6 @@
     "version": "1",
     "name": "BREAD COOPERATIVE",
     "homeUrl": "https://bread-coop.vercel.app",
-    "iconUrl": "https://bread-coop.vercel.app/bread-coop-icon-1024.png",
-    "splashImageUrl": "https://bread-coop.vercel.app/bread-coop-logo.png",
-    "splashBackgroundColor": "#F5F0E8",
-    "subtitle": "Bake Bread on Gnosis",
-    "description": "The future after capital. Mint and burn BREAD tokens on Gnosis Chain. Join the cooperative economy through mutual aid and solidarity.",
-    "screenshotUrls": [
-      "https://bread-coop.vercel.app/screenshots/screenshot-1.png",
-      "https://bread-coop.vercel.app/screenshots/screenshot-2.png",
-      "https://bread-coop.vercel.app/screenshots/screenshot-3.png"
-    ],
-    "primaryCategory": "finance",
-    "tags": [
-      "defi",
-      "gnosis",
-      "cooperative",
-      "bread",
-      "mutualaid"
-    ],
-    "heroImageUrl": "https://bread-coop.vercel.app/hero-image.png",
-    "tagline": "All Power To The People",
-    "ogTitle": "BREAD COOPERATIVE",
-    "ogDescription": "The future after capital. Mint and burn BREAD tokens on Gnosis Chain.",
-    "ogImageUrl": "https://bread-coop.vercel.app/og-image.png",
-    "noindex": false,
-    "requiredChains": [
-      "eip155:100"
-    ],
-    "requiredCapabilities": [
-      "actions.signIn",
-      "wallet.getEthereumProvider",
-      "wallet.switchChain",
-      "wallet.sendTransaction"
-    ],
-    "canonicalDomain": "bread-coop.vercel.app",
-    "imageUrl": "https://bread-coop.vercel.app/share-image.png",
-    "buttonTitle": "🍞 Bake Bread"
+    "iconUrl": "https://bread-coop.vercel.app/bread-coop-icon-1024.png"
   }
 }
