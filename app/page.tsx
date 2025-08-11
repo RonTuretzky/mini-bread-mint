@@ -257,6 +257,12 @@ export default function Page() {
         }
       }
       
+      console.log('Minting BREAD:', {
+        amount: mintAmount,
+        amountWei: parseEther(mintAmount).toString(),
+        receiver: receiver || account,
+      });
+      
       const { request } = await publicClient.simulateContract({
         account,
         address: BREAD_CONTRACT_ADDRESS as Hex,
@@ -355,12 +361,34 @@ export default function Page() {
         }
       }
       
+      // Check if user has enough BREAD tokens to burn
+      const burnAmountWei = parseEther(burnAmount);
+      const userBalance = await publicClient.readContract({
+        address: BREAD_CONTRACT_ADDRESS as Hex,
+        abi: breadAbi,
+        functionName: 'balanceOf',
+        args: [account],
+      });
+      
+      if (userBalance < burnAmountWei) {
+        setMessage(`Insufficient BREAD balance. You have ${formatEther(userBalance)} BREAD`);
+        setIsLoading(false);
+        return;
+      }
+      
+      console.log('Burning BREAD:', {
+        amount: burnAmount,
+        amountWei: burnAmountWei.toString(),
+        receiver: receiver || account,
+        userBalance: formatEther(userBalance),
+      });
+      
       const { request } = await publicClient.simulateContract({
         account,
         address: BREAD_CONTRACT_ADDRESS as Hex,
         abi: breadAbi,
         functionName: 'burn',
-        args: [parseEther(burnAmount), (receiver || account) as Hex],
+        args: [burnAmountWei, (receiver || account) as Hex],
       });
 
       const hash = await currentWalletClient.writeContract(request);
@@ -370,8 +398,25 @@ export default function Page() {
       setMessage('Burn successful!');
       await updateBalances(account);
     } catch (error: any) {
-      console.error('Burn error:', error);
-      setMessage(`Error: ${error.message}`);
+      console.error('Burn error details:', {
+        error,
+        errorMessage: error.message,
+        errorCode: error.code,
+        errorData: error.data,
+        burnAmount,
+        receiver: receiver || account,
+      });
+      
+      // More specific error messages
+      if (error.message?.includes('insufficient')) {
+        setMessage('Insufficient BREAD balance to burn');
+      } else if (error.message?.includes('exceeds balance')) {
+        setMessage('Amount exceeds your BREAD balance');
+      } else if (error.message?.includes('reverted')) {
+        setMessage('Transaction reverted. The burn function may have specific requirements.');
+      } else {
+        setMessage(`Error: ${error.message || 'Failed to burn BREAD'}`);
+      }
     } finally {
       setIsLoading(false);
     }
