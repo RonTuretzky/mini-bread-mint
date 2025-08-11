@@ -1,0 +1,12 @@
+{
+  "miniapp": {
+    "version": "1",
+    "name": "$BREAD",
+    "homeUrl": "https://bread-coop.vercel.app",
+    "iconUrl": "https://bread-coop.vercel.app/bread-coop-icon-1024.png",
+    "subtitle": "Bake Bread on Gnosis",
+    "description": "The future after capital. Mint and burn BREAD tokens on Gnosis Chain. Join the cooperative economy through mutual aid and solidarity.",
+    "splashBackgroundColor": "#F5F0E8",
+    "primaryCategory": "utility"
+  }
+}
