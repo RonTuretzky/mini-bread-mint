@@ -6,6 +6,7 @@ import sdk from '@farcaster/frame-sdk';
 import { gnosis } from './lib/chains';
 import { breadAbi } from './lib/breadAbi';
 import { BREAD_CONTRACT_ADDRESS, GNOSIS_CHAIN_ID } from './config';
+import ShareableFrame from './components/ShareableFrame';
 
 export default function Page() {
   const [account, setAccount] = useState<Hex | null>(null);
@@ -21,6 +22,11 @@ export default function Page() {
   const [walletClient, setWalletClient] = useState<any>(null);
   const [isInFarcaster, setIsInFarcaster] = useState<boolean>(false);
   const [provider, setProvider] = useState<any>(null);
+  
+  // ShareableFrame state
+  const [showShareFrame, setShowShareFrame] = useState<boolean>(false);
+  const [lastMintTxHash, setLastMintTxHash] = useState<string>('');
+  const [lastMintedAmount, setLastMintedAmount] = useState<string>('0');
 
   // Initialize Farcaster SDK and setup wallet
   useEffect(() => {
@@ -278,6 +284,12 @@ export default function Page() {
       await publicClient.waitForTransactionReceipt({ hash });
       setMessage('Mint successful! Bake that BREAD!');
       await updateBalances(account);
+      
+      // Calculate BREAD amount (1:1000 ratio)
+      const breadMinted = (parseFloat(mintAmount) * 1000).toFixed(2);
+      setLastMintedAmount(breadMinted);
+      setLastMintTxHash(hash);
+      setShowShareFrame(true);
     } catch (error: any) {
       console.error('Mint error:', error);
       setMessage(`Error: ${error.message}`);
@@ -589,6 +601,16 @@ export default function Page() {
           </div>
         </div>
       </div>
+      
+      {/* Shareable Frame Modal */}
+      <ShareableFrame
+        isOpen={showShareFrame}
+        onClose={() => setShowShareFrame(false)}
+        mintAmount={mintAmount}
+        breadAmount={lastMintedAmount}
+        txHash={lastMintTxHash}
+        account={account || '0x0'}
+      />
     </div>
   );
 }
