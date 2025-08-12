@@ -1,7 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createPublicClient, createWalletClient, custom, http, formatEther, parseEther, type Hex } from 'viem';
+import {
+  createPublicClient,
+  createWalletClient,
+  custom,
+  http,
+  formatEther,
+  parseEther,
+  type Hex,
+} from 'viem';
 import sdk from '@farcaster/frame-sdk';
 import { gnosis } from './lib/chains';
 import { breadAbi } from './lib/breadAbi';
@@ -16,6 +24,12 @@ export default function Page() {
   const [receiver, setReceiver] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<string>('');
+  const [isBaking, setIsBaking] = useState<boolean>(false);
+  const [isBaked, setIsBaked] = useState<boolean>(false);
+  const [isBurning, setIsBurning] = useState<boolean>(false);
+  const [isBurned, setIsBurned] = useState<boolean>(false);
+  const [bakingTxHash, setBakingTxHash] = useState<string>('');
+  const [burningTxHash, setBurningTxHash] = useState<string>('');
 
   const [publicClient, setPublicClient] = useState<any>(null);
   const [walletClient, setWalletClient] = useState<any>(null);
@@ -30,47 +44,55 @@ export default function Page() {
         await sdk.actions.ready();
         console.log('Farcaster SDK ready');
         setIsInFarcaster(true);
-        
+
         // Get Farcaster wallet provider
         const farcasterProvider = await sdk.wallet.ethProvider;
         if (farcasterProvider) {
           console.log('Using Farcaster wallet provider');
           setProvider(farcasterProvider);
-          
+
           // Use HTTP RPC for reads and simulations
-          setPublicClient(createPublicClient({
-            chain: gnosis,
-            transport: http('https://rpc.gnosischain.com'),
-          }));
+          setPublicClient(
+            createPublicClient({
+              chain: gnosis,
+              transport: http('https://rpc.gnosischain.com'),
+            }),
+          );
           // Use wallet provider for signing
-          setWalletClient(createWalletClient({
-            chain: gnosis,
-            transport: custom(farcasterProvider),
-          }));
+          setWalletClient(
+            createWalletClient({
+              chain: gnosis,
+              transport: custom(farcasterProvider),
+            }),
+          );
         }
       } catch (error) {
         console.log('Not running in Farcaster context:', error);
         setIsInFarcaster(false);
-        
+
         // Fall back to window.ethereum for standalone web
         if (typeof window !== 'undefined' && window.ethereum) {
           console.log('Using window.ethereum provider');
           setProvider(window.ethereum);
-          
+
           // Use HTTP RPC for reads and simulations
-          setPublicClient(createPublicClient({
-            chain: gnosis,
-            transport: http('https://rpc.gnosischain.com'),
-          }));
+          setPublicClient(
+            createPublicClient({
+              chain: gnosis,
+              transport: http('https://rpc.gnosischain.com'),
+            }),
+          );
           // Use wallet provider for signing
-          setWalletClient(createWalletClient({
-            chain: gnosis,
-            transport: custom(window.ethereum),
-          }));
+          setWalletClient(
+            createWalletClient({
+              chain: gnosis,
+              transport: custom(window.ethereum),
+            }),
+          );
         }
       }
     };
-    
+
     initializeApp();
   }, []);
 
@@ -86,7 +108,7 @@ export default function Page() {
         setMessage(isInFarcaster ? 'Wallet not available' : 'Please install MetaMask');
         return;
       }
-      
+
       if (!walletClient || !publicClient) {
         return;
       }
@@ -103,7 +125,7 @@ export default function Page() {
               // Chain might not be added, continue anyway
             }
           }
-          
+
           const accounts = await walletClient.requestAddresses();
           if (accounts.length > 0) {
             setAccount(accounts[0]);
@@ -113,7 +135,9 @@ export default function Page() {
           }
         } catch (error: any) {
           console.error('Error connecting Farcaster wallet:', error);
-          setMessage('Error connecting wallet - please ensure you have a wallet connected to Farcaster');
+          setMessage(
+            'Error connecting wallet - please ensure you have a wallet connected to Farcaster',
+          );
         }
       } else {
         // For standalone web, use MetaMask flow
@@ -158,22 +182,22 @@ export default function Page() {
 
   const updateBalances = async (address: Hex) => {
     if (!publicClient) return;
-    
+
     try {
       console.log('Fetching balances for address:', address);
-      
+
       // Fetch xDAI balance
       const xdai = await publicClient.getBalance({ address });
       console.log('xDAI balance (wei):', xdai.toString());
       setXdaiBalance(formatEther(xdai));
 
       // Fetch BREAD balance
-      const bread = await publicClient.readContract({
+      const bread = (await publicClient.readContract({
         address: BREAD_CONTRACT_ADDRESS as Hex,
         abi: breadAbi,
         functionName: 'balanceOf',
         args: [address],
-      }) as bigint;
+      })) as bigint;
       console.log('BREAD balance (wei):', bread.toString());
       setBreadBalance(formatEther(bread));
     } catch (error) {
@@ -187,7 +211,7 @@ export default function Page() {
       setMessage('Please connect your wallet');
       return;
     }
-    
+
     if (!walletClient || !publicClient || !provider) {
       setMessage('Wallet not connected');
       return;
@@ -195,22 +219,25 @@ export default function Page() {
 
     setIsLoading(true);
     setMessage('');
+    setIsBaking(true);
+    setIsBaked(false);
+    setBakingTxHash('');
 
     try {
       // Ensure we're on the correct chain and get the right walletClient
       let currentWalletClient = walletClient;
-      
+
       try {
         const chainId = await provider.request({ method: 'eth_chainId' });
         const currentChainId = parseInt(chainId, 16);
-        
+
         if (currentChainId !== GNOSIS_CHAIN_ID) {
           setMessage('Switching to Gnosis Chain...');
           await provider.request({
             method: 'wallet_switchEthereumChain',
             params: [{ chainId: '0x64' }],
           });
-          
+
           // Recreate walletClient with the new chain
           currentWalletClient = createWalletClient({
             chain: gnosis,
@@ -256,13 +283,13 @@ export default function Page() {
           return;
         }
       }
-      
+
       console.log('Minting BREAD:', {
         amount: mintAmount,
         amountWei: parseEther(mintAmount).toString(),
         receiver: receiver || account,
       });
-      
+
       const { request } = await publicClient.simulateContract({
         account,
         address: BREAD_CONTRACT_ADDRESS as Hex,
@@ -273,14 +300,17 @@ export default function Page() {
       });
 
       const hash = await currentWalletClient.writeContract(request);
-      setMessage(`Transaction sent: ${hash}`);
-      
+      setBakingTxHash(hash);
+
       await publicClient.waitForTransactionReceipt({ hash });
+      setIsBaking(false);
+      setIsBaked(true);
       setMessage('Mint successful! Bake that BREAD!');
       await updateBalances(account);
     } catch (error: any) {
       console.error('Mint error:', error);
       setMessage(`Error: ${error.message}`);
+      setIsBaking(false);
     } finally {
       setIsLoading(false);
     }
@@ -291,7 +321,7 @@ export default function Page() {
       setMessage('Please connect your wallet');
       return;
     }
-    
+
     if (!walletClient || !publicClient || !provider) {
       setMessage('Wallet not connected');
       return;
@@ -299,22 +329,25 @@ export default function Page() {
 
     setIsLoading(true);
     setMessage('');
+    setIsBurning(true);
+    setIsBurned(false);
+    setBurningTxHash('');
 
     try {
       // Ensure we're on the correct chain and get the right walletClient
       let currentWalletClient = walletClient;
-      
+
       try {
         const chainId = await provider.request({ method: 'eth_chainId' });
         const currentChainId = parseInt(chainId, 16);
-        
+
         if (currentChainId !== GNOSIS_CHAIN_ID) {
           setMessage('Switching to Gnosis Chain...');
           await provider.request({
             method: 'wallet_switchEthereumChain',
             params: [{ chainId: '0x64' }],
           });
-          
+
           // Recreate walletClient with the new chain
           currentWalletClient = createWalletClient({
             chain: gnosis,
@@ -360,7 +393,7 @@ export default function Page() {
           return;
         }
       }
-      
+
       // Check if user has enough BREAD tokens to burn
       const burnAmountWei = parseEther(burnAmount);
       const userBalance = await publicClient.readContract({
@@ -369,20 +402,20 @@ export default function Page() {
         functionName: 'balanceOf',
         args: [account],
       });
-      
+
       if (userBalance < burnAmountWei) {
         setMessage(`Insufficient BREAD balance. You have ${formatEther(userBalance)} BREAD`);
         setIsLoading(false);
         return;
       }
-      
+
       console.log('Burning BREAD:', {
         amount: burnAmount,
         amountWei: burnAmountWei.toString(),
         receiver: receiver || account,
         userBalance: formatEther(userBalance),
       });
-      
+
       const { request } = await publicClient.simulateContract({
         account,
         address: BREAD_CONTRACT_ADDRESS as Hex,
@@ -392,9 +425,11 @@ export default function Page() {
       });
 
       const hash = await currentWalletClient.writeContract(request);
-      setMessage(`Transaction sent: ${hash}`);
-      
+      setBurningTxHash(hash);
+
       await publicClient.waitForTransactionReceipt({ hash });
+      setIsBurning(false);
+      setIsBurned(true);
       setMessage('Burn successful!');
       await updateBalances(account);
     } catch (error: any) {
@@ -406,7 +441,7 @@ export default function Page() {
         burnAmount,
         receiver: receiver || account,
       });
-      
+
       // More specific error messages
       if (error.message?.includes('insufficient')) {
         setMessage('Insufficient BREAD balance to burn');
@@ -417,9 +452,51 @@ export default function Page() {
       } else {
         setMessage(`Error: ${error.message || 'Failed to burn BREAD'}`);
       }
+      setIsBurning(false);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const Modal = ({
+    isOpen,
+    onClose,
+    title,
+    children,
+    type = 'info',
+  }: {
+    isOpen: boolean;
+    onClose: () => void;
+    title: string;
+    children: React.ReactNode;
+    type?: 'info' | 'success';
+  }) => {
+    if (!isOpen) return null;
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose} />
+        <div
+          className="relative bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4 border-4"
+          style={{ borderColor: type === 'success' ? '#10B981' : '#E16B38' }}
+        >
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl font-bold"
+            aria-label="Close"
+          >
+            ×
+          </button>
+          <h3
+            className="text-2xl font-bold mb-4 uppercase"
+            style={{ color: type === 'success' ? '#10B981' : '#E16B38' }}
+          >
+            {title}
+          </h3>
+          <div className="text-gray-700">{children}</div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -428,24 +505,36 @@ export default function Page() {
         <header className="text-center mb-12">
           <div className="flex justify-center items-center mb-6">
             <img src="/bread-coop-logo.png" alt="Bread Cooperative" className="h-16 w-auto mr-4" />
-            <h1 className="text-4xl md:text-5xl font-bold uppercase tracking-wide" style={{ color: '#E16B38', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+            <h1
+              className="text-4xl md:text-5xl font-bold uppercase tracking-wide"
+              style={{ color: '#E16B38', fontFamily: 'system-ui, -apple-system, sans-serif' }}
+            >
               Bread Cooperative
             </h1>
           </div>
           <p className="text-xl text-gray-800 mb-2 italic">The future after capital</p>
           <p className="text-lg text-gray-600">Bake Bread • Mint and Burn BREAD on Gnosis Chain</p>
-          <p className="text-sm text-gray-500 mt-4 uppercase tracking-wider">All Power To The People</p>
+          <p className="text-sm text-gray-500 mt-4 uppercase tracking-wider">
+            All Power To The People
+          </p>
         </header>
 
         <div className="max-w-2xl mx-auto">
-          <div className="bg-white rounded-xl shadow-lg p-8 mb-8 border-2" style={{ borderColor: '#E16B38' }}>
+          <div
+            className="bg-white rounded-xl shadow-lg p-8 mb-8 border-2"
+            style={{ borderColor: '#E16B38' }}
+          >
             <div className="mb-6">
-              <h2 className="text-2xl font-bold uppercase mb-4" style={{ color: '#E16B38' }}>Wallet Status</h2>
+              <h2 className="text-2xl font-bold uppercase mb-4" style={{ color: '#E16B38' }}>
+                Wallet Status
+              </h2>
               {account ? (
                 <div className="space-y-3">
                   <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
                     <span className="font-semibold text-gray-700">Connected:</span>
-                    <span className="font-mono text-sm">{account.slice(0, 6)}...{account.slice(-4)}</span>
+                    <span className="font-mono text-sm">
+                      {account.slice(0, 6)}...{account.slice(-4)}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
                     <span className="font-semibold text-gray-700">xDAI Balance:</span>
@@ -453,14 +542,16 @@ export default function Page() {
                   </div>
                   <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
                     <span className="font-semibold text-gray-700">BREAD Balance:</span>
-                    <span className="font-mono font-bold" style={{ color: '#E16B38' }}>{parseFloat(breadBalance).toFixed(4)} BREAD</span>
+                    <span className="font-mono font-bold" style={{ color: '#E16B38' }}>
+                      {parseFloat(breadBalance).toFixed(4)} BREAD
+                    </span>
                   </div>
                   <button
                     onClick={() => updateBalances(account)}
                     className="w-full mt-4 text-white py-2 px-4 rounded font-semibold uppercase tracking-wider transition duration-200"
                     style={{ backgroundColor: '#4A90E2' }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#357ABD'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#4A90E2'}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#357ABD')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#4A90E2')}
                   >
                     Refresh Balances
                   </button>
@@ -470,8 +561,8 @@ export default function Page() {
                   onClick={connectWallet}
                   className="w-full text-white py-3 px-6 rounded font-bold uppercase tracking-wider transition duration-300"
                   style={{ backgroundColor: '#E16B38' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#C55A2B'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#E16B38'}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#C55A2B')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#E16B38')}
                 >
                   {isInFarcaster ? 'Connect Farcaster Wallet' : 'Connect Wallet'}
                 </button>
@@ -479,11 +570,18 @@ export default function Page() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-lg p-8 mb-8 border-2" style={{ borderColor: '#E16B38' }}>
-            <h2 className="text-2xl font-bold uppercase mb-6" style={{ color: '#E16B38' }}>Mint BREAD</h2>
+          <div
+            className="bg-white rounded-xl shadow-lg p-8 mb-8 border-2"
+            style={{ borderColor: '#E16B38' }}
+          >
+            <h2 className="text-2xl font-bold uppercase mb-6" style={{ color: '#E16B38' }}>
+              Mint BREAD
+            </h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-gray-700 font-semibold mb-2 uppercase text-sm tracking-wider">Amount (xDAI to send)</label>
+                <label className="block text-gray-700 font-semibold mb-2 uppercase text-sm tracking-wider">
+                  Amount (xDAI to send)
+                </label>
                 <input
                   type="number"
                   value={mintAmount}
@@ -496,7 +594,9 @@ export default function Page() {
                 />
               </div>
               <div>
-                <label className="block text-gray-700 font-semibold mb-2 uppercase text-sm tracking-wider">Receiver Address</label>
+                <label className="block text-gray-700 font-semibold mb-2 uppercase text-sm tracking-wider">
+                  Receiver Address
+                </label>
                 <input
                   type="text"
                   value={receiver}
@@ -510,23 +610,34 @@ export default function Page() {
                 onClick={handleMint}
                 disabled={isLoading || !account}
                 className="w-full text-white py-4 px-6 rounded font-bold uppercase tracking-wider transition duration-300 disabled:opacity-50"
-                style={{ 
+                style={{
                   backgroundColor: isLoading || !account ? '#999' : '#E16B38',
-                  cursor: isLoading || !account ? 'not-allowed' : 'pointer'
+                  cursor: isLoading || !account ? 'not-allowed' : 'pointer',
                 }}
-                onMouseEnter={(e) => { if (!isLoading && account) e.currentTarget.style.backgroundColor = '#C55A2B'; }}
-                onMouseLeave={(e) => { if (!isLoading && account) e.currentTarget.style.backgroundColor = '#E16B38'; }}
+                onMouseEnter={(e) => {
+                  if (!isLoading && account) e.currentTarget.style.backgroundColor = '#C55A2B';
+                }}
+                onMouseLeave={(e) => {
+                  if (!isLoading && account) e.currentTarget.style.backgroundColor = '#E16B38';
+                }}
               >
                 {isLoading ? 'Processing...' : 'BAKE BREAD'}
               </button>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-lg p-8 mb-8 border-2" style={{ borderColor: '#4A90E2' }}>
-            <h2 className="text-2xl font-bold uppercase mb-6" style={{ color: '#4A90E2' }}>Burn BREAD</h2>
+          <div
+            className="bg-white rounded-xl shadow-lg p-8 mb-8 border-2"
+            style={{ borderColor: '#4A90E2' }}
+          >
+            <h2 className="text-2xl font-bold uppercase mb-6" style={{ color: '#4A90E2' }}>
+              Burn BREAD
+            </h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-gray-700 font-semibold mb-2 uppercase text-sm tracking-wider">Amount (BREAD to burn)</label>
+                <label className="block text-gray-700 font-semibold mb-2 uppercase text-sm tracking-wider">
+                  Amount (BREAD to burn)
+                </label>
                 <input
                   type="number"
                   value={burnAmount}
@@ -539,7 +650,9 @@ export default function Page() {
                 />
               </div>
               <div>
-                <label className="block text-gray-700 font-semibold mb-2 uppercase text-sm tracking-wider">Receiver Address</label>
+                <label className="block text-gray-700 font-semibold mb-2 uppercase text-sm tracking-wider">
+                  Receiver Address
+                </label>
                 <input
                   type="text"
                   value={receiver}
@@ -553,12 +666,16 @@ export default function Page() {
                 onClick={handleBurn}
                 disabled={isLoading || !account}
                 className="w-full text-white py-4 px-6 rounded font-bold uppercase tracking-wider transition duration-300 disabled:opacity-50"
-                style={{ 
+                style={{
                   backgroundColor: isLoading || !account ? '#999' : '#4A90E2',
-                  cursor: isLoading || !account ? 'not-allowed' : 'pointer'
+                  cursor: isLoading || !account ? 'not-allowed' : 'pointer',
                 }}
-                onMouseEnter={(e) => { if (!isLoading && account) e.currentTarget.style.backgroundColor = '#357ABD'; }}
-                onMouseLeave={(e) => { if (!isLoading && account) e.currentTarget.style.backgroundColor = '#4A90E2'; }}
+                onMouseEnter={(e) => {
+                  if (!isLoading && account) e.currentTarget.style.backgroundColor = '#357ABD';
+                }}
+                onMouseLeave={(e) => {
+                  if (!isLoading && account) e.currentTarget.style.backgroundColor = '#4A90E2';
+                }}
               >
                 {isLoading ? 'Processing...' : 'BURN BREAD'}
               </button>
@@ -566,7 +683,9 @@ export default function Page() {
           </div>
 
           {message && (
-            <div className={`p-4 rounded-lg text-center font-semibold ${message.includes('Error') ? 'bg-red-100 text-red-700 border-2 border-red-300' : 'bg-green-100 text-green-700 border-2 border-green-300'}`}>
+            <div
+              className={`p-4 rounded-lg text-center font-semibold ${message.includes('Error') ? 'bg-red-100 text-red-700 border-2 border-red-300' : 'bg-green-100 text-green-700 border-2 border-green-300'}`}
+            >
               {message}
             </div>
           )}
@@ -578,17 +697,149 @@ export default function Page() {
               rel="noopener noreferrer"
               className="inline-block font-semibold uppercase tracking-wider underline transition duration-200"
               style={{ color: '#E16B38' }}
-              onMouseEnter={(e) => e.currentTarget.style.color = '#C55A2B'}
-              onMouseLeave={(e) => e.currentTarget.style.color = '#E16B38'}
+              onMouseEnter={(e) => (e.currentTarget.style.color = '#C55A2B')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = '#E16B38')}
             >
               View Contract on Gnosisscan
             </a>
             <div className="text-sm text-gray-600">
-              <p className="font-semibold">BREAD Solidarity Fund • BREAD Savings • BREAD Insurance</p>
+              <p className="font-semibold">
+                BREAD Solidarity Fund • BREAD Savings • BREAD Insurance
+              </p>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Baking In Progress Modal */}
+      <Modal isOpen={isBaking} onClose={() => {}} title="Baking in Progress" type="info">
+        <div className="space-y-4">
+          <div className="flex justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+          </div>
+          <p className="text-center font-semibold">Your BREAD is being baked...</p>
+          <p className="text-center text-sm text-gray-600">
+            Please wait while the transaction is being processed on the blockchain.
+          </p>
+          {bakingTxHash && (
+            <div className="mt-4 p-3 bg-gray-100 rounded">
+              <p className="text-xs text-gray-600 mb-1">Transaction Hash:</p>
+              <p className="font-mono text-xs break-all">{bakingTxHash}</p>
+              <a
+                href={`https://gnosisscan.io/tx/${bakingTxHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 text-xs mt-2 inline-block"
+              >
+                View on Gnosisscan →
+              </a>
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* Baking Success Modal */}
+      <Modal
+        isOpen={isBaked}
+        onClose={() => setIsBaked(false)}
+        title="Bread Baked Successfully!"
+        type="success"
+      >
+        <div className="space-y-4">
+          <div className="flex justify-center text-5xl">🍞</div>
+          <p className="text-center font-semibold text-lg">
+            Your BREAD has been successfully baked!
+          </p>
+          <p className="text-center text-sm text-gray-600">
+            The minting transaction has been confirmed on the blockchain.
+          </p>
+          {bakingTxHash && (
+            <div className="mt-4 p-3 bg-green-50 rounded">
+              <p className="text-xs text-gray-600 mb-1">Transaction Hash:</p>
+              <p className="font-mono text-xs break-all">{bakingTxHash}</p>
+              <a
+                href={`https://gnosisscan.io/tx/${bakingTxHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-green-600 hover:text-green-800 text-xs mt-2 inline-block"
+              >
+                View on Gnosisscan →
+              </a>
+            </div>
+          )}
+          <button
+            onClick={() => setIsBaked(false)}
+            className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded font-semibold uppercase tracking-wider transition duration-200"
+          >
+            Continue
+          </button>
+        </div>
+      </Modal>
+
+      {/* Burning In Progress Modal */}
+      <Modal isOpen={isBurning} onClose={() => {}} title="Burning in Progress" type="info">
+        <div className="space-y-4">
+          <div className="flex justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          </div>
+          <p className="text-center font-semibold">Your BREAD is being burned...</p>
+          <p className="text-center text-sm text-gray-600">
+            Please wait while the transaction is being processed on the blockchain.
+          </p>
+          {burningTxHash && (
+            <div className="mt-4 p-3 bg-gray-100 rounded">
+              <p className="text-xs text-gray-600 mb-1">Transaction Hash:</p>
+              <p className="font-mono text-xs break-all">{burningTxHash}</p>
+              <a
+                href={`https://gnosisscan.io/tx/${burningTxHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 text-xs mt-2 inline-block"
+              >
+                View on Gnosisscan →
+              </a>
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* Burning Success Modal */}
+      <Modal
+        isOpen={isBurned}
+        onClose={() => setIsBurned(false)}
+        title="Bread Burned Successfully!"
+        type="success"
+      >
+        <div className="space-y-4">
+          <div className="flex justify-center text-5xl">🔥</div>
+          <p className="text-center font-semibold text-lg">
+            Your BREAD has been successfully burned!
+          </p>
+          <p className="text-center text-sm text-gray-600">
+            The burn transaction has been confirmed on the blockchain.
+          </p>
+          {burningTxHash && (
+            <div className="mt-4 p-3 bg-green-50 rounded">
+              <p className="text-xs text-gray-600 mb-1">Transaction Hash:</p>
+              <p className="font-mono text-xs break-all">{burningTxHash}</p>
+              <a
+                href={`https://gnosisscan.io/tx/${burningTxHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-green-600 hover:text-green-800 text-xs mt-2 inline-block"
+              >
+                View on Gnosisscan →
+              </a>
+            </div>
+          )}
+          <button
+            onClick={() => setIsBurned(false)}
+            className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded font-semibold uppercase tracking-wider transition duration-200"
+          >
+            Continue
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }
