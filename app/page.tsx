@@ -7,6 +7,7 @@ import { gnosis } from './lib/chains';
 import { breadAbi } from './lib/breadAbi';
 import { BREAD_CONTRACT_ADDRESS, GNOSIS_CHAIN_ID } from './config';
 import ShareableFrame from './components/ShareableFrame';
+import Bridge from './components/Bridge';
 
 export default function Page() {
   const [account, setAccount] = useState<Hex | null>(null);
@@ -27,6 +28,9 @@ export default function Page() {
   const [showShareFrame, setShowShareFrame] = useState<boolean>(false);
   const [lastMintTxHash, setLastMintTxHash] = useState<string>('');
   const [lastMintedAmount, setLastMintedAmount] = useState<string>('0');
+  
+  // Bridge state
+  const [showBridge, setShowBridge] = useState<boolean>(false);
 
   // Initialize Farcaster SDK and setup wallet
   useEffect(() => {
@@ -476,6 +480,24 @@ export default function Page() {
                   >
                     Refresh Balances
                   </button>
+                  
+                  {/* Show bridge button if xDAI balance is low */}
+                  {parseFloat(xdaiBalance) < 0.01 && (
+                    <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                      <p className="text-yellow-800 text-sm mb-3">
+                        <strong>💡 Need xDAI?</strong> You need xDAI to mint BREAD tokens. Get some using our bridge!
+                      </p>
+                      <button
+                        onClick={() => setShowBridge(true)}
+                        className="w-full text-white py-2 px-4 rounded font-semibold uppercase tracking-wider transition duration-200"
+                        style={{ backgroundColor: '#E16B38' }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#C55A2B'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#E16B38'}
+                      >
+                        Get xDAI
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <button
@@ -492,7 +514,18 @@ export default function Page() {
           </div>
 
           <div className="bg-white rounded-xl shadow-lg p-8 mb-8 border-2" style={{ borderColor: '#E16B38' }}>
-            <h2 className="text-2xl font-bold uppercase mb-6" style={{ color: '#E16B38' }}>Mint BREAD</h2>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold uppercase" style={{ color: '#E16B38' }}>Mint BREAD</h2>
+              <button
+                onClick={() => setShowBridge(true)}
+                className="text-sm text-white py-2 px-4 rounded font-semibold uppercase tracking-wider transition duration-200"
+                style={{ backgroundColor: '#4A90E2' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#357ABD'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#4A90E2'}
+              >
+                Get xDAI
+              </button>
+            </div>
             <div className="space-y-4">
               <div>
                 <label className="block text-gray-700 font-semibold mb-2 uppercase text-sm tracking-wider">Amount (xDAI to send)</label>
@@ -601,6 +634,13 @@ export default function Page() {
           </div>
         </div>
       </div>
+      
+      {/* Bridge Modal */}
+      <Bridge
+        isOpen={showBridge}
+        onClose={() => setShowBridge(false)}
+        userAddress={account || undefined}
+      />
       
       {/* Shareable Frame Modal */}
       <ShareableFrame
