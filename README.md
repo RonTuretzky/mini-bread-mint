@@ -9,7 +9,7 @@ A web application for minting and burning BREAD tokens on Gnosis Chain.
 ## Features
 
 - **BAKE BREAD**: Send xDAI to mint new BREAD tokens
-- **BURN BREAD**: Burn your BREAD tokens  
+- **BURN BREAD**: Burn your BREAD tokens
 - **Balance Display**: View your xDAI and BREAD balances
 - **MetaMask Integration**: Seamless wallet connection
 - **Bread Cooperative Themed**: Official Bread Cooperative branding
@@ -31,11 +31,13 @@ A web application for minting and burning BREAD tokens on Gnosis Chain.
 ## Setup
 
 1. Install dependencies:
+
 ```bash
 npm install
 ```
 
 2. Run the development server:
+
 ```bash
 npm run dev
 ```
