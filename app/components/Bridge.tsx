@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import sdk from '@farcaster/frame-sdk';
 
 interface BridgeProps {
   isOpen: boolean;
@@ -9,9 +10,134 @@ interface BridgeProps {
 }
 
 export default function Bridge({ isOpen, onClose, userAddress }: BridgeProps) {
-  const [selectedTab, setSelectedTab] = useState<'widget' | 'links'>('widget');
+  const [selectedTab, setSelectedTab] = useState<'farcaster' | 'widget' | 'links'>('farcaster');
+  const [isInFarcaster, setIsInFarcaster] = useState<boolean>(false);
+  const [isSwapping, setIsSwapping] = useState<boolean>(false);
+  const [swapMessage, setSwapMessage] = useState<string>('');
+  const [swapAmount, setSwapAmount] = useState<string>('0.01');
+  const [selectedFromToken, setSelectedFromToken] = useState<string>('eth-mainnet');
+
+  // Check if we're in Farcaster context
+  useEffect(() => {
+    const checkFarcasterContext = async () => {
+      try {
+        const isInMiniApp = await sdk.isInMiniApp();
+        setIsInFarcaster(isInMiniApp);
+        if (isInMiniApp) {
+          setSelectedTab('farcaster');
+        } else {
+          setSelectedTab('widget');
+        }
+      } catch (error) {
+        console.log('Not in Farcaster context:', error);
+        setIsInFarcaster(false);
+        setSelectedTab('widget');
+      }
+    };
+
+    if (isOpen) {
+      checkFarcasterContext();
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
+
+  // Token options for swapping to xDAI
+  const fromTokenOptions = [
+    { 
+      id: 'eth-mainnet', 
+      name: 'ETH (Ethereum)', 
+      caip19: 'eip155:1/native',
+      symbol: 'ETH'
+    },
+    { 
+      id: 'usdc-mainnet', 
+      name: 'USDC (Ethereum)', 
+      caip19: 'eip155:1/erc20:0xA0b86a33E6441f8C1f4d1a4B1Dd1ec0e2e52bdf7',
+      symbol: 'USDC'
+    },
+    { 
+      id: 'usdc-base', 
+      name: 'USDC (Base)', 
+      caip19: 'eip155:8453/erc20:0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+      symbol: 'USDC'
+    },
+    { 
+      id: 'eth-base', 
+      name: 'ETH (Base)', 
+      caip19: 'eip155:8453/native',
+      symbol: 'ETH'
+    },
+    { 
+      id: 'eth-arbitrum', 
+      name: 'ETH (Arbitrum)', 
+      caip19: 'eip155:42161/native',
+      symbol: 'ETH'
+    },
+    { 
+      id: 'usdc-arbitrum', 
+      name: 'USDC (Arbitrum)', 
+      caip19: 'eip155:42161/erc20:0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+      symbol: 'USDC'
+    }
+  ];
+
+  const selectedToken = fromTokenOptions.find(token => token.id === selectedFromToken) || fromTokenOptions[0];
+
+  const handleFarcasterSwap = async () => {
+    if (!isInFarcaster) {
+      setSwapMessage('Farcaster wallet not available');
+      return;
+    }
+
+    setIsSwapping(true);
+    setSwapMessage('Initiating swap...');
+
+    try {
+      // Calculate amount in smallest unit (wei for ETH, base units for tokens)
+      const amount = parseFloat(swapAmount);
+      let sellAmount: string;
+      
+      if (selectedToken.symbol === 'ETH') {
+        // ETH: convert to wei (18 decimals)
+        sellAmount = (amount * Math.pow(10, 18)).toString();
+      } else if (selectedToken.symbol === 'USDC') {
+        // USDC: convert to base units (6 decimals)
+        sellAmount = (amount * Math.pow(10, 6)).toString();
+      } else {
+        // Default to 18 decimals
+        sellAmount = (amount * Math.pow(10, 18)).toString();
+      }
+
+      const result = await sdk.actions.swapToken({
+        sellToken: selectedToken.caip19,
+        buyToken: 'eip155:100/native', // xDAI on Gnosis Chain
+        sellAmount: sellAmount
+      });
+
+      if (result.success) {
+        setSwapMessage(`Swap successful! Transaction${result.swap.transactions.length > 1 ? 's' : ''}: ${result.swap.transactions.join(', ')}`);
+        setTimeout(() => {
+          setSwapMessage('');
+          onClose();
+        }, 5000);
+      } else {
+        let errorMsg = 'Swap failed';
+        if (result.reason === 'rejected_by_user') {
+          errorMsg = 'Swap cancelled by user';
+        } else if (result.error?.message) {
+          errorMsg = `Swap failed: ${result.error.message}`;
+        }
+        setSwapMessage(errorMsg);
+      }
+    } catch (error: any) {
+      console.error('Swap error:', error);
+      setSwapMessage(`Error: ${error.message || 'Failed to initiate swap'}`);
+    } finally {
+      setIsSwapping(false);
+      setTimeout(() => setSwapMessage(''), 5000);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -37,6 +163,21 @@ export default function Bridge({ isOpen, onClose, userAddress }: BridgeProps) {
         {/* Tab Navigation */}
         <div className="border-b border-gray-200">
           <div className="flex">
+            {isInFarcaster && (
+              <button
+                onClick={() => setSelectedTab('farcaster')}
+                className={`px-6 py-3 font-semibold transition-colors ${
+                  selectedTab === 'farcaster'
+                    ? 'border-b-2 text-orange-600'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+                style={{
+                  borderBottomColor: selectedTab === 'farcaster' ? '#E16B38' : 'transparent'
+                }}
+              >
+                🚀 Farcaster Swap
+              </button>
+            )}
             <button
               onClick={() => setSelectedTab('widget')}
               className={`px-6 py-3 font-semibold transition-colors ${
@@ -68,6 +209,109 @@ export default function Bridge({ isOpen, onClose, userAddress }: BridgeProps) {
 
         {/* Content */}
         <div className="p-6">
+          {selectedTab === 'farcaster' && isInFarcaster && (
+            <div className="space-y-6">
+              <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4 mb-4">
+                <p className="text-purple-800 text-sm">
+                  <strong>🚀 Farcaster Native Swap:</strong> Use your Farcaster wallet to swap tokens directly to xDAI on Gnosis Chain. Fast, secure, and seamless!
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-gray-700 font-semibold mb-2 uppercase text-sm tracking-wider">
+                    From Token
+                  </label>
+                  <select
+                    value={selectedFromToken}
+                    onChange={(e) => setSelectedFromToken(e.target.value)}
+                    className="w-full px-4 py-3 border-2 rounded focus:outline-none focus:border-orange-400"
+                    style={{ borderColor: '#E16B38' }}
+                    disabled={isSwapping}
+                  >
+                    {fromTokenOptions.map((token) => (
+                      <option key={token.id} value={token.id}>
+                        {token.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 font-semibold mb-2 uppercase text-sm tracking-wider">
+                    Amount to Swap
+                  </label>
+                  <input
+                    type="number"
+                    value={swapAmount}
+                    onChange={(e) => setSwapAmount(e.target.value)}
+                    className="w-full px-4 py-3 border-2 rounded focus:outline-none focus:border-orange-400"
+                    style={{ borderColor: '#E16B38' }}
+                    placeholder="0.01"
+                    step="0.001"
+                    min="0"
+                    disabled={isSwapping}
+                  />
+                  <div className="text-sm text-gray-500 mt-1">
+                    You will receive approximately {swapAmount} xDAI on Gnosis Chain
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-900 mb-2">Swap Details:</h4>
+                  <div className="text-sm text-gray-600 space-y-1">
+                    <div className="flex justify-between">
+                      <span>From:</span>
+                      <span>{selectedToken.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>To:</span>
+                      <span>xDAI (Gnosis Chain)</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Amount:</span>
+                      <span>{swapAmount} {selectedToken.symbol}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleFarcasterSwap}
+                  disabled={isSwapping || !swapAmount || parseFloat(swapAmount) <= 0}
+                  className="w-full text-white py-4 px-6 rounded font-bold uppercase tracking-wider transition duration-300 disabled:opacity-50"
+                  style={{ 
+                    backgroundColor: isSwapping ? '#999' : '#8B5CF6',
+                    cursor: isSwapping || !swapAmount || parseFloat(swapAmount) <= 0 ? 'not-allowed' : 'pointer'
+                  }}
+                  onMouseEnter={(e) => { 
+                    if (!isSwapping && swapAmount && parseFloat(swapAmount) > 0) {
+                      e.currentTarget.style.backgroundColor = '#7C3AED';
+                    }
+                  }}
+                  onMouseLeave={(e) => { 
+                    if (!isSwapping && swapAmount && parseFloat(swapAmount) > 0) {
+                      e.currentTarget.style.backgroundColor = '#8B5CF6';
+                    }
+                  }}
+                >
+                  {isSwapping ? 'Swapping...' : '🚀 Swap with Farcaster'}
+                </button>
+
+                {swapMessage && (
+                  <div className={`p-3 rounded text-center font-semibold ${
+                    swapMessage.includes('successful') 
+                      ? 'bg-green-100 text-green-700 border border-green-300' 
+                      : swapMessage.includes('Error') || swapMessage.includes('failed')
+                      ? 'bg-red-100 text-red-700 border border-red-300'
+                      : 'bg-blue-100 text-blue-700 border border-blue-300'
+                  }`}>
+                    {swapMessage}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {selectedTab === 'widget' && (
             <div className="space-y-4">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
