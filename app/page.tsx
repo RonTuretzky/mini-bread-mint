@@ -286,7 +286,7 @@ export default function Page() {
       await updateBalances(account);
       
       // Calculate BREAD amount (1:1000 ratio)
-      const breadMinted = (parseFloat(mintAmount) * 1000).toFixed(2);
+      const breadMinted = parseFloat((parseFloat(mintAmount) * 1000).toFixed(2)).toString();
       setLastMintedAmount(breadMinted);
       setLastMintTxHash(hash);
       setShowShareFrame(true);
@@ -461,11 +461,11 @@ export default function Page() {
                   </div>
                   <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
                     <span className="font-semibold text-gray-700">xDAI Balance:</span>
-                    <span className="font-mono">{parseFloat(xdaiBalance).toFixed(4)} xDAI</span>
+                    <span className="font-mono">{parseFloat(parseFloat(xdaiBalance).toFixed(4)).toString()} xDAI</span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
                     <span className="font-semibold text-gray-700">BREAD Balance:</span>
-                    <span className="font-mono font-bold" style={{ color: '#E16B38' }}>{parseFloat(breadBalance).toFixed(4)} BREAD</span>
+                    <span className="font-mono font-bold" style={{ color: '#E16B38' }}>{parseFloat(parseFloat(breadBalance).toFixed(4)).toString()} BREAD</span>
                   </div>
                   <button
                     onClick={() => updateBalances(account)}
