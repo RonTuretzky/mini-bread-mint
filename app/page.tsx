@@ -29,13 +29,9 @@ export default function Page() {
   const [lastMintTxHash, setLastMintTxHash] = useState<string>('');
   const [lastMintedAmount, setLastMintedAmount] = useState<string>('0');
 
-  // BakingModal state
+  // BakingModal state for real mint process
   const [isBaking, setIsBaking] = useState<boolean>(false);
   const [isBaked, setIsBaked] = useState<boolean>(false);
-  
-  // Real mint baking modal state
-  const [isRealBaking, setIsRealBaking] = useState<boolean>(false);
-  const [isRealBaked, setIsRealBaked] = useState<boolean>(false);
 
   // Initialize Farcaster SDK and setup wallet
   useEffect(() => {
@@ -210,8 +206,8 @@ export default function Page() {
 
     setIsLoading(true);
     setMessage('');
-    setIsRealBaking(false);
-    setIsRealBaked(false);
+    setIsBaking(false);
+    setIsBaked(false);
 
     try {
       // Ensure we're on the correct chain and get the right walletClient
@@ -293,7 +289,7 @@ export default function Page() {
       setMessage(`Transaction sent: ${hash}`);
       
       // Show baking progress modal
-      setIsRealBaking(true);
+      setIsBaking(true);
       
       await publicClient.waitForTransactionReceipt({ hash });
       setMessage('Mint successful! Bake that BREAD!');
@@ -305,35 +301,18 @@ export default function Page() {
       setLastMintTxHash(hash);
       
       // Show success modal
-      setIsRealBaking(false);
-      setIsRealBaked(true);
+      setIsBaking(false);
+      setIsBaked(true);
       
       setShowShareFrame(true);
     } catch (error: any) {
       console.error('Mint error:', error);
       setMessage(`Error: ${error.message}`);
-      setIsRealBaking(false);
-      setIsRealBaked(false);
+      setIsBaking(false);
+      setIsBaked(false);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // Test function for demonstrating the baking modals (with manual close)
-  const testBakingModal = async () => {
-    setIsBaking(false);
-    setIsBaked(false);
-    setLastMintedAmount('50.00');
-    
-    // Show progress modal
-    setIsBaking(true);
-    
-    // Simulate baking time (3 seconds)
-    setTimeout(() => {
-      setIsBaking(false);
-      setIsBaked(true);
-      // Success modal stays open until manually closed
-    }, 3000);
   };
 
   const handleBurn = async () => {
@@ -529,27 +508,6 @@ export default function Page() {
             </div>
           </div>
 
-          {/* Test Baking Modal Button (for demonstration) */}
-          <div className="bg-white rounded-xl shadow-lg p-6 mb-8 border-2" style={{ borderColor: '#E16B38' }}>
-            <h3 className="text-lg font-bold uppercase mb-4" style={{ color: '#E16B38' }}>Demo: Baking Modal</h3>
-            <p className="text-gray-600 mb-4 text-sm">
-              Click the button below to preview the new baking progress and completion modals.
-            </p>
-            <button
-              onClick={testBakingModal}
-              disabled={isBaking || isBaked}
-              className="w-full text-white py-3 px-6 rounded font-bold uppercase tracking-wider transition duration-300 disabled:opacity-50"
-              style={{ 
-                backgroundColor: (isBaking || isBaked) ? '#999' : '#8B5CF6',
-                cursor: (isBaking || isBaked) ? 'not-allowed' : 'pointer'
-              }}
-              onMouseEnter={(e) => { if (!isBaking && !isBaked) e.currentTarget.style.backgroundColor = '#7C3AED'; }}
-              onMouseLeave={(e) => { if (!isBaking && !isBaked) e.currentTarget.style.backgroundColor = '#8B5CF6'; }}
-            >
-              {isBaking ? 'Baking...' : isBaked ? 'Baked!' : 'Test Baking Modal'}
-            </button>
-          </div>
-
           <div className="bg-white rounded-xl shadow-lg p-8 mb-8 border-2" style={{ borderColor: '#E16B38' }}>
             <h2 className="text-2xl font-bold uppercase mb-6" style={{ color: '#E16B38' }}>Mint BREAD</h2>
             <div className="space-y-4">
@@ -672,7 +630,6 @@ export default function Page() {
       />
 
       {/* Baking Progress and Success Modals */}
-      {/* Demo Modals */}
       <BakingModal
         isOpen={isBaking || isBaked}
         isProgress={isBaking}
@@ -681,18 +638,6 @@ export default function Page() {
           setIsBaked(false);
         }}
         breadAmount={isBaked ? lastMintedAmount : ''}
-        autoClose={false} // Don't auto-close for demo
-      />
-
-      {/* Real Mint Modals */}
-      <BakingModal
-        isOpen={isRealBaking || isRealBaked}
-        isProgress={isRealBaking}
-        onClose={() => {
-          setIsRealBaking(false);
-          setIsRealBaked(false);
-        }}
-        breadAmount={isRealBaked ? lastMintedAmount : ''}
         autoClose={true} // Auto-close for real transactions
       />
     </div>
