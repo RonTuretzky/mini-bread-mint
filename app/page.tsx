@@ -32,6 +32,10 @@ export default function Page() {
   // BakingModal state
   const [isBaking, setIsBaking] = useState<boolean>(false);
   const [isBaked, setIsBaked] = useState<boolean>(false);
+  
+  // Real mint baking modal state
+  const [isRealBaking, setIsRealBaking] = useState<boolean>(false);
+  const [isRealBaked, setIsRealBaked] = useState<boolean>(false);
 
   // Initialize Farcaster SDK and setup wallet
   useEffect(() => {
@@ -206,8 +210,8 @@ export default function Page() {
 
     setIsLoading(true);
     setMessage('');
-    setIsBaking(false);
-    setIsBaked(false);
+    setIsRealBaking(false);
+    setIsRealBaked(false);
 
     try {
       // Ensure we're on the correct chain and get the right walletClient
@@ -289,7 +293,7 @@ export default function Page() {
       setMessage(`Transaction sent: ${hash}`);
       
       // Show baking progress modal
-      setIsBaking(true);
+      setIsRealBaking(true);
       
       await publicClient.waitForTransactionReceipt({ hash });
       setMessage('Mint successful! Bake that BREAD!');
@@ -301,15 +305,15 @@ export default function Page() {
       setLastMintTxHash(hash);
       
       // Show success modal
-      setIsBaking(false);
-      setIsBaked(true);
+      setIsRealBaking(false);
+      setIsRealBaked(true);
       
       setShowShareFrame(true);
     } catch (error: any) {
       console.error('Mint error:', error);
       setMessage(`Error: ${error.message}`);
-      setIsBaking(false);
-      setIsBaked(false);
+      setIsRealBaking(false);
+      setIsRealBaked(false);
     } finally {
       setIsLoading(false);
     }
@@ -668,6 +672,7 @@ export default function Page() {
       />
 
       {/* Baking Progress and Success Modals */}
+      {/* Demo Modals */}
       <BakingModal
         isOpen={isBaking || isBaked}
         isProgress={isBaking}
@@ -677,6 +682,18 @@ export default function Page() {
         }}
         breadAmount={isBaked ? lastMintedAmount : ''}
         autoClose={false} // Don't auto-close for demo
+      />
+
+      {/* Real Mint Modals */}
+      <BakingModal
+        isOpen={isRealBaking || isRealBaked}
+        isProgress={isRealBaking}
+        onClose={() => {
+          setIsRealBaking(false);
+          setIsRealBaked(false);
+        }}
+        breadAmount={isRealBaked ? lastMintedAmount : ''}
+        autoClose={true} // Auto-close for real transactions
       />
     </div>
   );
