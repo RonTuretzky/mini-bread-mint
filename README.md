@@ -11,6 +11,7 @@ A web application for minting and burning BREAD tokens on Gnosis Chain.
 - **BAKE BREAD**: Send xDAI to mint new BREAD tokens
 - **BURN BREAD**: Burn your BREAD tokens  
 - **Balance Display**: View your xDAI and BREAD balances
+- **Bridge Integration**: Get xDAI through embedded bridge widget
 - **MetaMask Integration**: Seamless wallet connection
 - **Bread Cooperative Themed**: Official Bread Cooperative branding
 
@@ -45,8 +46,25 @@ npm run dev
 ## Requirements
 
 - MetaMask or compatible Web3 wallet
-- xDAI balance on Gnosis Chain for minting
+- xDAI balance on Gnosis Chain for minting (use built-in bridge to get xDAI)
 - BREAD tokens for burning
+
+## Getting xDAI
+
+The app includes a built-in bridge feature to help you get xDAI on Gnosis Chain:
+
+1. **Click "Get xDAI"** button in the mint section
+2. **Choose bridge method**:
+   - **Bridge Widget**: Use the embedded Jumper.exchange widget 
+   - **External Bridges**: Links to popular bridge services
+3. **Bridge tokens** from Ethereum, Polygon, or other supported networks
+4. **Return to mint BREAD** with your new xDAI balance
+
+### Supported Bridges
+
+- **Gnosis Bridge** (Official) - Bridge ETH from Ethereum mainnet
+- **Jumper.exchange** - Multi-chain bridge aggregator  
+- **Socket Bridge** - Cross-chain bridge with competitive rates
 
 ## Environment Variables
 
