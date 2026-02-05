@@ -7,6 +7,7 @@ import { gnosis } from './lib/chains';
 import { breadAbi } from './lib/breadAbi';
 import { BREAD_CONTRACT_ADDRESS, GNOSIS_CHAIN_ID } from './config';
 import ShareableFrame from './components/ShareableFrame';
+import BakingModal from './components/BakingModal';
 
 export default function Page() {
   const [account, setAccount] = useState<Hex | null>(null);
@@ -27,6 +28,10 @@ export default function Page() {
   const [showShareFrame, setShowShareFrame] = useState<boolean>(false);
   const [lastMintTxHash, setLastMintTxHash] = useState<string>('');
   const [lastMintedAmount, setLastMintedAmount] = useState<string>('0');
+
+  // BakingModal state for real mint process
+  const [isBaking, setIsBaking] = useState<boolean>(false);
+  const [isBaked, setIsBaked] = useState<boolean>(false);
 
   // Initialize Farcaster SDK and setup wallet
   useEffect(() => {
@@ -201,6 +206,8 @@ export default function Page() {
 
     setIsLoading(true);
     setMessage('');
+    setIsBaking(false);
+    setIsBaked(false);
 
     try {
       // Ensure we're on the correct chain and get the right walletClient
@@ -281,6 +288,9 @@ export default function Page() {
       const hash = await currentWalletClient.writeContract(request);
       setMessage(`Transaction sent: ${hash}`);
       
+      // Show baking progress modal
+      setIsBaking(true);
+      
       await publicClient.waitForTransactionReceipt({ hash });
       setMessage('Mint successful! Bake that BREAD!');
       await updateBalances(account);
@@ -289,10 +299,17 @@ export default function Page() {
       const breadMinted = (parseFloat(mintAmount) * 1000).toFixed(2);
       setLastMintedAmount(breadMinted);
       setLastMintTxHash(hash);
+      
+      // Show success modal
+      setIsBaking(false);
+      setIsBaked(true);
+      
       setShowShareFrame(true);
     } catch (error: any) {
       console.error('Mint error:', error);
       setMessage(`Error: ${error.message}`);
+      setIsBaking(false);
+      setIsBaked(false);
     } finally {
       setIsLoading(false);
     }
@@ -610,6 +627,18 @@ export default function Page() {
         breadAmount={lastMintedAmount}
         txHash={lastMintTxHash}
         account={account || '0x0'}
+      />
+
+      {/* Baking Progress and Success Modals */}
+      <BakingModal
+        isOpen={isBaking || isBaked}
+        isProgress={isBaking}
+        onClose={() => {
+          setIsBaking(false);
+          setIsBaked(false);
+        }}
+        breadAmount={isBaked ? lastMintedAmount : ''}
+        autoClose={true} // Auto-close for real transactions
       />
     </div>
   );
